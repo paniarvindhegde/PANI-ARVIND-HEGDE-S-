@@ -1,0 +1,87 @@
+import uuid
+from datetime import datetime
+
+# Snapshot class representing a VM snapshot
+class Snapshot:
+    def _init_(self, vm_id, description=""):
+        self.id = str(uuid.uuid4())  # unique snapshot id
+        self.vm_id = vm_id           # associated VM id
+        self.description = description  # snapshot description
+        self.created_at = datetime.now() # timestamp of creation
+        self.status = "active"        # snapshot status (active, deleted, etc.)
+        
+    def _repr_(self):
+        return (f"Snapshot(id={self.id}, vm_id={self.vm_id}, "
+                f"description={self.description}, status={self.status}, "
+                f"created_at={self.created_at})")
+
+# SnapshotManager class for managing VM snapshots
+class SnapshotManager:
+    def _init_(self):
+        self.snapshots = {}  # Dictionary to store snapshots {vm_id: [snapshot_list]}
+    
+    # CRUD Operations
+    def create_snapshot(self, vm_id, description=""):
+        snapshot = Snapshot(vm_id, description)
+        if vm_id not in self.snapshots:
+            self.snapshots[vm_id] = []
+        self.snapshots[vm_id].append(snapshot)
+        return snapshot
+
+    def read_snapshots(self, vm_id):
+        return self.snapshots.get(vm_id, [])
+
+    def update_snapshot(self, snapshot_id, vm_id, description=None, status=None):
+        snapshots = self.snapshots.get(vm_id, [])
+        for snapshot in snapshots:
+            if snapshot.id == snapshot_id:
+                if description:
+                    snapshot.description = description
+                if status:
+                    snapshot.status = status
+                return snapshot
+        return None
+
+    def delete_snapshot(self, snapshot_id, vm_id):
+        snapshots = self.snapshots.get(vm_id, [])
+        for snapshot in snapshots:
+            if snapshot.id == snapshot_id:
+                snapshots.remove(snapshot)
+                return snapshot
+        return None
+    
+    # Take a new VM snapshot
+    def take_snapshot(self, vm_id, description=""):
+        return self.create_snapshot(vm_id, description)
+    
+    # Manage the lifecycle of snapshots (e.g., mark them as inactive)
+    def manage_snapshot_lifecycle(self, snapshot_id, vm_id, status):
+        return self.update_snapshot(snapshot_id, vm_id, status=status)
+
+# Example Usage
+if _name_ == "_main_":
+    snapshot_manager = SnapshotManager()
+    
+    # Create a snapshot for VM ID 123
+    snapshot1 = snapshot_manager.take_snapshot("123", "Initial snapshot")
+    print(f"Created: {snapshot1}")
+    
+    # Create another snapshot for VM ID 123
+    snapshot2 = snapshot_manager.take_snapshot("123", "Backup snapshot")
+    print(f"Created: {snapshot2}")
+    
+    # List snapshots for VM ID 123
+    snapshots = snapshot_manager.read_snapshots("123")
+    print(f"Snapshots for VM 123: {snapshots}")
+    
+    # Update a snapshot description
+    updated_snapshot = snapshot_manager.update_snapshot(snapshot1.id, "123", description="Updated snapshot description")
+    print(f"Updated: {updated_snapshot}")
+    
+    # Manage snapshot lifecycle (e.g., mark as deleted)
+    snapshot_manager.manage_snapshot_lifecycle(snapshot2.id, "123", status="deleted")
+    print(f"Snapshots after lifecycle update: {snapshot_manager.read_snapshots('123')}")
+    
+    # Delete a snapshot
+    snapshot_manager.delete_snapshot(snapshot1.id, "123")
+    print(f"Snapshots after deletion: {snapshot_manager.read_snapshots('123')}")
